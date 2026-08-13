@@ -267,11 +267,34 @@ internal static class CharacterSelectScreenBgPatch
         if (containerField?.GetValue(__instance) is not Node container)
             return;
 
+        ApplyToContainer(container, profile);
+
+        // Retry next idle frame in case the BG scene finishes instantiating after SelectCharacter returns.
+        Callable.From(() => ApplyToContainer(container, profile)).CallDeferred();
+    }
+
+    private static void ApplyToContainer(Node container, SkinProfile profile)
+    {
+        if (!GodotObject.IsInstanceValid(container))
+            return;
+
         var children = container.GetChildren();
         if (children.Count == 0)
             return;
 
-        var bg = children[^1] as Node;
+        // Prefer our PNG template if present; otherwise last child (vanilla swap target).
+        Node? bg = null;
+        foreach (var child in children)
+        {
+            if (child is Node n && (n.Name.ToString().Contains("PngCharSelectBg", StringComparison.OrdinalIgnoreCase)
+                                    || n.HasMethod("apply_skin")))
+            {
+                bg = n;
+                break;
+            }
+        }
+
+        bg ??= children[^1] as Node;
         if (bg != null)
             SkinApplier.ApplyCharSelectBg(bg, profile);
     }

@@ -142,6 +142,16 @@ public partial class NativeSettingsUi : CanvasLayer
             browse.Pressed += () => FileBrowseHelper.BrowsePng(this, $"Select {captured}.png", path =>
             {
                 field.Text = path;
+                if (string.Equals(captured, AssetKeys.CharSelectBg, StringComparison.OrdinalIgnoreCase))
+                {
+                    _offsetFields["char_select_bg_zoom"].Text =
+                        CharSelectBgFramer.DefaultZoom.ToString(CultureInfo.InvariantCulture);
+                    _offsetFields["char_select_bg_offset"].Text = Format(
+                    [
+                        CharSelectBgFramer.DefaultOffsetX,
+                        CharSelectBgFramer.DefaultOffsetY
+                    ]);
+                }
             });
             row.AddChild(browse);
 
@@ -162,6 +172,8 @@ public partial class NativeSettingsUi : CanvasLayer
         AddOffsetField(list, "rest_scale", "Rest Scale");
         AddOffsetField(list, "rest_anchor", "Rest Anchor X,Y");
         AddOffsetField(list, "rest_bounds", "Rest Bounds X,Y,W,H");
+        AddOffsetField(list, "char_select_bg_zoom", "Char Select BG Zoom");
+        AddOffsetField(list, "char_select_bg_offset", "Char Select BG Offset X,Y");
 
         var buttons = new HBoxContainer();
         var save = new Button { Text = "Save / Apply" };
@@ -209,6 +221,8 @@ public partial class NativeSettingsUi : CanvasLayer
         _offsetFields["rest_scale"].Text = o.RestSpriteScale.ToString(CultureInfo.InvariantCulture);
         _offsetFields["rest_anchor"].Text = Format(o.RestSeatAnchor);
         _offsetFields["rest_bounds"].Text = Format(o.RestVisibleBounds);
+        _offsetFields["char_select_bg_zoom"].Text = o.CharSelectBgZoom.ToString(CultureInfo.InvariantCulture);
+        _offsetFields["char_select_bg_offset"].Text = Format([o.CharSelectBgOffsetX, o.CharSelectBgOffsetY]);
         _status.Text = $"Editing {_characterId} — restart after save to apply.";
     }
 
@@ -252,6 +266,12 @@ public partial class NativeSettingsUi : CanvasLayer
             o.RestSpriteScale = ParseFloat(_offsetFields["rest_scale"].Text, o.RestSpriteScale);
             o.RestSeatAnchor = ParseVec(_offsetFields["rest_anchor"].Text, o.RestSeatAnchor);
             o.RestVisibleBounds = ParseBounds(_offsetFields["rest_bounds"].Text, o.RestVisibleBounds);
+            o.CharSelectBgZoom = ParseFloat(_offsetFields["char_select_bg_zoom"].Text, o.CharSelectBgZoom);
+            var bgOffset = ParseVec(
+                _offsetFields["char_select_bg_offset"].Text,
+                [o.CharSelectBgOffsetX, o.CharSelectBgOffsetY]);
+            o.CharSelectBgOffsetX = bgOffset[0];
+            o.CharSelectBgOffsetY = bgOffset[1];
 
             SkinProfileLoader.Save(dto);
             SkinRegistry.ReloadAll();

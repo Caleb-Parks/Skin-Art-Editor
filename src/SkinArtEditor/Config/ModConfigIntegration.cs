@@ -102,6 +102,12 @@ public static class ModConfigIntegration
             "", FormatVec(dto.Offsets.RestSeatAnchor)));
         list.Add(Entry(entryType, configType, "rest_bounds", "TextInput", "Rest Visible Bounds X,Y,W,H",
             "", FormatVec(dto.Offsets.RestVisibleBounds)));
+        list.Add(Entry(entryType, configType, "char_select_bg_zoom", "TextInput", "Char Select BG Zoom",
+            "Zoom after contain-fit into 2560×1200 (Cassiopeia default 1.2). Restart after Save.",
+            dto.Offsets.CharSelectBgZoom.ToString(CultureInfo.InvariantCulture)));
+        list.Add(Entry(entryType, configType, "char_select_bg_offset", "TextInput", "Char Select BG Offset X,Y",
+            "Extra shift after centering/top-align (fractions of canvas). Cassiopeia default -0.1, 0. Browsing a new BG resets these.",
+            FormatVec([dto.Offsets.CharSelectBgOffsetX, dto.Offsets.CharSelectBgOffsetY])));
 
         list.Add(Entry(entryType, configType, "save", "Button", "Save / Apply",
             "Write config + copy absolute paths into the mod folder. Restart to apply.",
@@ -161,6 +167,14 @@ public static class ModConfigIntegration
                 var rel = AssetCopier.CopyAsset(
                     _selectedCharacter, key, path, dto.KnockoutBackdrop, dto.KnockoutThreshold);
                 dto.Assets[key] = rel;
+                if (string.Equals(key, AssetKeys.CharSelectBg, StringComparison.OrdinalIgnoreCase))
+                {
+                    CharSelectBgFramer.ApplyCassiopeiaDefaults(dto.Offsets);
+                    SetModConfigValue("char_select_bg_zoom",
+                        dto.Offsets.CharSelectBgZoom.ToString(CultureInfo.InvariantCulture));
+                    SetModConfigValue("char_select_bg_offset",
+                        FormatVec([dto.Offsets.CharSelectBgOffsetX, dto.Offsets.CharSelectBgOffsetY]));
+                }
                 SkinProfileLoader.Save(dto);
                 SetModConfigValue($"asset_{key}", rel);
                 Log.Info($"Set {key} = {rel}. Restart to apply.");
@@ -226,6 +240,14 @@ public static class ModConfigIntegration
         dto.Offsets.RestSpriteScale = ParseFloat(GetModConfigValue("rest_scale", dto.Offsets.RestSpriteScale.ToString(CultureInfo.InvariantCulture)), dto.Offsets.RestSpriteScale);
         dto.Offsets.RestSeatAnchor = ParseVec(GetModConfigValue("rest_anchor", FormatVec(dto.Offsets.RestSeatAnchor)), dto.Offsets.RestSeatAnchor);
         dto.Offsets.RestVisibleBounds = ParseBounds(GetModConfigValue("rest_bounds", FormatVec(dto.Offsets.RestVisibleBounds)), dto.Offsets.RestVisibleBounds);
+        dto.Offsets.CharSelectBgZoom = ParseFloat(
+            GetModConfigValue("char_select_bg_zoom", dto.Offsets.CharSelectBgZoom.ToString(CultureInfo.InvariantCulture)),
+            dto.Offsets.CharSelectBgZoom);
+        var bgOffset = ParseVec(
+            GetModConfigValue("char_select_bg_offset", FormatVec([dto.Offsets.CharSelectBgOffsetX, dto.Offsets.CharSelectBgOffsetY])),
+            [dto.Offsets.CharSelectBgOffsetX, dto.Offsets.CharSelectBgOffsetY]);
+        dto.Offsets.CharSelectBgOffsetX = bgOffset[0];
+        dto.Offsets.CharSelectBgOffsetY = bgOffset[1];
 
         SkinProfileLoader.Save(dto);
         SkinRegistry.ReloadAll();

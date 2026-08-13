@@ -7,7 +7,7 @@ Slay the Spire 2 mod that lets you configure **custom static-PNG character skins
 - Per-character folder under `mods/SkinArtEditor/characters/<id>/`
 - Optional assets: missing slots keep **vanilla** art
 - Combat is all-or-nothing (needs all five poses); shop/rest/UI are independent
-- Configurable offsets (combat, FormVfx, shop, rest)
+- Configurable offsets (combat, FormVfx, shop, rest, char-select background framing)
 - **Backdrop knockout** (Cassiopeia-style): solid near-black backgrounds on combat/shop/rest, icon, and map-marker PNGs are cleared when copying
 - **ModConfig** integration when installed; otherwise press **F8** for the fallback UI
 - Restart the game after saving to apply scene overrides
@@ -20,7 +20,7 @@ Slay the Spire 2 mod that lets you configure **custom static-PNG character skins
 | `relaxed_loop` | Shop | Optional; backdrop knockout on copy |
 | `rest_loop` | Campfire / rest site | Optional; backdrop knockout on copy |
 | `char_select`, `char_select_locked` | Character select portraits | Optional each (no knockout — keep opaque) |
-| `char_select_bg` | Character select background | Optional (no knockout — keep opaque) |
+| `char_select_bg` | Character select background | Optional (no knockout). Framed at runtime: Cassiopeia contain → 1.2× zoom → top + 10% left |
 | `character_icon`, `character_icon_outline` | Top panel, stats, bestiary, card-library filters | Icon scene + `IconTexture` + baked filter retexture; backdrop knockout on copy |
 | `map_marker` | Map marker | Optional; backdrop knockout on copy |
 
@@ -51,6 +51,7 @@ Defaults match Cassiopeia’s tuned Regent values. They only apply when that con
 - **Combat:** `combatVisualsPosition`, `combatVisualsScale`, `combatBottomPaddingPx`, `formVfxPosition`
 - **Shop:** `shopSpriteOffset`, `shopSpriteScale`
 - **Rest:** `restDisplayOffset`, `restSpriteScale`, `restSeatAnchor`, `restVisibleBounds`
+- **Char select BG:** `charSelectBgZoom` (default `1.2` after contain-fit), `charSelectBgOffsetX` / `charSelectBgOffsetY` (defaults `-0.1`, `0` = center then shift left 10%, top-aligned). Matches Cassiopeia’s master prep. Browsing a new `char_select_bg` resets these defaults; tweak and restart without re-browsing.
 
 ## Build / deploy
 

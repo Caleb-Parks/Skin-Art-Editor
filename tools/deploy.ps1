@@ -38,13 +38,20 @@ foreach ($f in $files) {
     }
 }
 
-# Deploy character configs + art (do not wipe user edits if present — merge by copy)
+# Seed sample characters/ only when missing — never clobber in-game user art/config.
 $charsSrc = Join-Path $Root 'characters'
 $charsDst = Join-Path $dest 'characters'
 if (Test-Path $charsSrc) {
     New-Item -ItemType Directory -Force -Path $charsDst | Out-Null
-    Copy-Item (Join-Path $charsSrc '*') $charsDst -Recurse -Force
-    Write-Host "    -> $charsDst"
+    Get-ChildItem $charsSrc -Recurse -File | ForEach-Object {
+        $rel = $_.FullName.Substring((Resolve-Path $charsSrc).Path.Length).TrimStart('\', '/')
+        $out = Join-Path $charsDst $rel
+        if (Test-Path $out) { return }
+        New-Item -ItemType Directory -Force -Path (Split-Path $out) | Out-Null
+        Copy-Item $_.FullName $out -Force
+        Write-Host "    + characters/$($rel.Replace('\', '/'))"
+    }
+    Write-Host "    -> $charsDst (existing files preserved)"
 }
 
 Write-Host "Deployed '$ModId' to: $dest"

@@ -86,6 +86,18 @@ public sealed class SkinOffsetsDto
 
     [JsonPropertyName("restVisibleBounds")]
     public float[] RestVisibleBounds { get; set; } = [153f, 125f, 767f, 1077f];
+
+    /// <summary>Zoom after contain-fit into 2560×1200 (Cassiopeia default 1.2).</summary>
+    [JsonPropertyName("charSelectBgZoom")]
+    public float CharSelectBgZoom { get; set; } = CharSelectBgFramer.DefaultZoom;
+
+    /// <summary>Extra X shift as fraction of canvas width after centering (Cassiopeia default -0.1).</summary>
+    [JsonPropertyName("charSelectBgOffsetX")]
+    public float CharSelectBgOffsetX { get; set; } = CharSelectBgFramer.DefaultOffsetX;
+
+    /// <summary>Extra Y shift as fraction of canvas height from the top (Cassiopeia default 0).</summary>
+    [JsonPropertyName("charSelectBgOffsetY")]
+    public float CharSelectBgOffsetY { get; set; } = CharSelectBgFramer.DefaultOffsetY;
 }
 
 /// <summary>Resolved runtime profile: only present/readable assets are kept.</summary>

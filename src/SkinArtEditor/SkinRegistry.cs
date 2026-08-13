@@ -63,6 +63,7 @@ public static class TextureCache
                 tex.Dispose();
         }
         Cache.Clear();
+        CharSelectBgFramer.Clear();
     }
 
     public static ImageTexture? Load(string absolutePath)
@@ -216,18 +217,42 @@ public static class SkinApplier
 
     public static void ApplyCharSelectBg(Node bgRoot, SkinProfile profile)
     {
-        var tex = TextureCache.LoadAsset(profile, AssetKeys.CharSelectBg);
+        var tex = CharSelectBgFramer.LoadFramed(profile)
+                  ?? TextureCache.LoadAsset(profile, AssetKeys.CharSelectBg);
         if (tex == null)
             return;
 
+        if (!GodotObject.IsInstanceValid(bgRoot))
+            return;
+
         if (bgRoot.HasMethod("apply_skin"))
-            bgRoot.Call("apply_skin", tex);
-        else
         {
-            var bg = bgRoot.GetNodeOrNull("Bg") as TextureRect;
-            if (bg != null)
-                bg.Texture = tex;
+            bgRoot.Call("apply_skin", tex);
+            return;
         }
+
+        var bg = bgRoot.GetNodeOrNull("Bg") as TextureRect
+                 ?? FindTextureRect(bgRoot);
+        if (bg != null)
+            bg.Texture = tex;
+    }
+
+    private static TextureRect? FindTextureRect(Node root)
+    {
+        if (root is TextureRect self)
+            return self;
+        foreach (var child in root.GetChildren())
+        {
+            if (child is TextureRect tr)
+                return tr;
+            if (child is Node n)
+            {
+                var nested = FindTextureRect(n);
+                if (nested != null)
+                    return nested;
+            }
+        }
+        return null;
     }
 
     /// <summary>
