@@ -1,0 +1,16 @@
+; Skin Art Editor — template scenes + animator scripts for runtime PNG skins.
+; Minimal Godot 4.5 project used to pack scripts/scenes into SkinArtEditor.pck.
+
+config_version=5
+
+[application]
+
+config/name="SkinArtEditor"
+config/features=PackedStringArray("4.5")
+
+[importer_defaults]
+
+texture={
+"compress/mode": 0,
+"mipmaps/generate": false
+}

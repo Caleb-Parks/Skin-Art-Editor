@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://skinartdefmerchant01"]
+
+[ext_resource type="Script" uid="uid://b2ww8leotjikm" path="res://src/Core/Nodes/Screens/Shops/NMerchantCharacter.cs" id="1_merchant"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://bs70xw06n8w5b" path="res://animations/merchant/regent/regent_merchant_skel_data.tres" id="2_skel"]
+[ext_resource type="Script" path="res://scripts/shop_sprite.gd" id="3_shop"]
+
+[node name="PngMerchant" type="Node2D"]
+script = ExtResource("1_merchant")
+
+[node name="SpineSprite" type="SpineSprite" parent="."]
+visible = false
+skeleton_data_res = ExtResource("2_skel")
+preview_skin = "Default"
+preview_animation = "relaxed_loop"
+preview_frame = false
+preview_time = 5.4
+scale = Vector2(0.47, 0.47)
+
+[node name="RelaxedSprite" type="Sprite2D" parent="."]
+script = ExtResource("3_shop")

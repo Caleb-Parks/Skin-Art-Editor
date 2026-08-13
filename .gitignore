@@ -1,0 +1,10 @@
+bin/
+obj/
+build/
+mod/*.dll
+mod/*.pck
+.godot/
+*.user
+.vs/
+build/reflect/
+build/decomp/

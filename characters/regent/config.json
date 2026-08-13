@@ -1,0 +1,31 @@
+{
+  "characterId": "regent",
+  "enabled": true,
+  "assets": {
+    "idle_loop": "idle_loop.png",
+    "attack": "attack.png",
+    "cast": "cast.png",
+    "hurt": "hurt.png",
+    "die": "die.png",
+    "relaxed_loop": "relaxed_loop.png",
+    "rest_loop": "rest_loop.png",
+    "char_select": "char_select.png",
+    "char_select_locked": "char_select_locked.png",
+    "char_select_bg": "char_select_bg.png",
+    "character_icon": "character_icon.png",
+    "character_icon_outline": "character_icon_outline.png",
+    "map_marker": "map_marker.png"
+  },
+  "offsets": {
+    "combatVisualsPosition": [0, 3.91293],
+    "combatVisualsScale": 0.31011,
+    "combatBottomPaddingPx": 32,
+    "formVfxPosition": [-17.5, 0],
+    "shopSpriteOffset": [0, -428.4],
+    "shopSpriteScale": 0.456134,
+    "restDisplayOffset": [-173.983, 150.047],
+    "restSpriteScale": 0.792,
+    "restSeatAnchor": [0.5, 0.6],
+    "restVisibleBounds": [153, 125, 767, 1077]
+  }
+}

@@ -1,0 +1,44 @@
+[gd_scene load_steps=3 format=3 uid="uid://skinartdefcombat01"]
+
+[ext_resource type="Script" uid="uid://cghtlla3sw0po" path="res://src/Core/Nodes/Combat/NCreatureVisuals.cs" id="1_ncv"]
+[ext_resource type="Script" path="res://scripts/png_animator.gd" id="2_anim"]
+
+[node name="PngCombatVisuals" type="Node2D"]
+script = ExtResource("1_ncv")
+metadata/_edit_group_ = true
+
+[node name="FormVfx" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 0
+position = Vector2(-17.5, 0)
+mouse_filter = 2
+
+[node name="Visuals" type="Node2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, 3.91293)
+scale = Vector2(0.31011, 0.31011)
+script = ExtResource("2_anim")
+
+[node name="CurrentSprite" type="Sprite2D" parent="Visuals"]
+
+[node name="NextSprite" type="Sprite2D" parent="Visuals"]
+visible = false
+modulate = Color(1, 1, 1, 0)
+
+[node name="Bounds" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 0
+offset_left = -125.0
+offset_top = -320.0
+offset_right = 125.0
+mouse_filter = 2
+
+[node name="CenterPos" type="Marker2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -164)
+
+[node name="IntentPos" type="Marker2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -350)

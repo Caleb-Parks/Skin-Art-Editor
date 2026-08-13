@@ -1,0 +1,10 @@
+{
+  "id": "SkinArtEditor",
+  "name": "Skin Art Editor",
+  "author": "caleb",
+  "description": "Configure custom static-PNG character skins (combat, shop, rest, UI) from files on disk. Restart after saving. ModConfig optional.",
+  "version": "v0.1.0",
+  "has_pck": true,
+  "has_dll": true,
+  "affects_gameplay": false
+}
