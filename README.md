@@ -1,6 +1,24 @@
 # Skin Art Editor
 
-Slay the Spire 2 mod that lets you configure **custom static-PNG character skins** from files on disk. Ships with a **Regent** sample profile (Cassiopeia-style Wishkeeper poses); additional characters are folder-driven.
+Slay the Spire 2 mod that lets you configure **custom static-PNG character skins** from files on disk. Supports all five vanilla playables; ships with a **Regent** sample profile (Cassiopeia-style Wishkeeper poses).
+
+## Supported characters
+
+| Slug | Display name | Sample art |
+|---|---|---|
+| `ironclad` | Ironclad | — (add your PNGs) |
+| `silent` | Silent | — |
+| `defect` | Defect | — |
+| `regent` | Regent | Yes (`characters/regent/`) |
+| `necrobinder` | Necrobinder | — |
+
+Folder name under `mods/SkinArtEditor/characters/<slug>/` must match the game character id. The ModConfig / F8 dropdown lists every folder that has a `config.json`.
+
+**Caveats**
+
+- **Necrobinder Osty:** vanilla rest/combat include companion Osty skeletons. The generic PNG scenes replace those; Osty is **not** separately skinned in this version.
+- **Defect orbs / character VFX:** body PNG overrides leave orb UI and most vanilla VFX alone.
+- **Offsets:** non-Regent profiles start with neutral defaults — tune after you add art. Regent’s tuned values are the reference in [`characters/regent/config.json`](characters/regent/config.json).
 
 ## Features
 
@@ -65,9 +83,7 @@ PNG merchant/rest/combat templates are shared across characters. Per-profile off
 - Rest-site hitbox / selection reticle / thought-bubble positions and root transform in `png_rest_site.tscn`
 - Combat intent/marker layout baked into `png_combat.tscn`
 - Animator trigger aliases (e.g. Regent `Attack_Sovereign` → attack) in `png_animator.gd`
-- Card-library pool icon paths are still mapped per vanilla character id in code when adding new characters
-
-Add a new character by creating `characters/<slug>/config.json` (folder name = game character id slug). The settings dropdown scans that folder automatically.
+- Card-library pools are mapped for the five vanilla characters in code
 
 ## Build / deploy
 
@@ -81,11 +97,11 @@ Requires .NET 9, Godot 4.5.1 Mono, and GDRE (defaults point at the Cassiopeia `t
 .\tools\build.ps1 -Deploy
 ```
 
-Sample Regent art (from Cassiopeia) is shipped under `characters/regent/` so the mod works out of the box after deploy.
+Sample Regent art (from Cassiopeia) is shipped under `characters/regent/` so the mod works out of the box after deploy. Other characters seed as empty configs (vanilla until you Browse art).
 
 ## In-game config
 
-1. With **ModConfig**: open its settings panel for “Skin Art Editor”, browse/clear assets, edit offsets, click **Save / Apply**.
+1. With **ModConfig**: open its settings panel for “Skin Art Editor”, pick a character, browse/clear assets, edit offsets, click **Save / Apply**.
 2. Without ModConfig: press **F8** for the built-in panel.
 3. Restart STS2.
 
@@ -102,7 +118,10 @@ mods/SkinArtEditor/
   SkinArtEditor.json
   SkinArtEditor.dll
   SkinArtEditor.pck
-  characters/regent/
-    config.json
-    *.png
+  characters/
+    ironclad/config.json
+    silent/config.json
+    defect/config.json
+    regent/config.json + *.png
+    necrobinder/config.json
 ```

@@ -7,7 +7,11 @@ public static class CharacterCatalog
 {
     private static readonly Dictionary<string, string> DisplayOverrides = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["regent"] = "Regent"
+        ["ironclad"] = "Ironclad",
+        ["silent"] = "Silent",
+        ["defect"] = "Defect",
+        ["regent"] = "Regent",
+        ["necrobinder"] = "Necrobinder"
     };
 
     public readonly record struct Entry(string Slug, string DisplayName);

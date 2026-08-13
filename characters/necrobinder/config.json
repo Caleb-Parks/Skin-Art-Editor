@@ -1,0 +1,22 @@
+{
+  "characterId": "necrobinder",
+  "enabled": true,
+  "knockoutBackdrop": true,
+  "knockoutThreshold": 18,
+  "assets": {},
+  "offsets": {
+    "combatVisualsPosition": [0, 0],
+    "combatVisualsScale": 1,
+    "combatBottomPaddingPx": 32,
+    "formVfxPosition": [0, 0],
+    "shopSpriteOffset": [0, 0],
+    "shopSpriteScale": 1,
+    "restDisplayOffset": [0, 0],
+    "restSpriteScale": 1,
+    "restSeatAnchor": [0.5, 0.5],
+    "restVisibleBounds": [0, 0, 1024, 1024],
+    "charSelectBgZoom": 1.2,
+    "charSelectBgOffsetX": -0.1,
+    "charSelectBgOffsetY": 0
+  }
+}
