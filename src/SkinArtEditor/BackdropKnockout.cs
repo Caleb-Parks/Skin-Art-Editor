@@ -5,7 +5,8 @@ namespace SkinArtEditor;
 
 /// <summary>
 /// Cassiopeia-style edge-connected near-black backdrop knockout for combat/shop/rest poses
-/// and character_icon / outline / map_marker. Char-select portraits and BG are never processed.
+/// and character_icon / map_marker. Char-select portraits and BG are never processed.
+/// Icon outlines are derived from character_icon after knockout.
 /// Only pixels connected to the image border with (r+g+b) &lt;= threshold are cleared.
 /// </summary>
 public static class BackdropKnockout
@@ -22,7 +23,6 @@ public static class BackdropKnockout
         AssetKeys.RelaxedLoop,
         AssetKeys.RestLoop,
         AssetKeys.CharacterIcon,
-        AssetKeys.CharacterIconOutline,
         AssetKeys.MapMarker
     };
 

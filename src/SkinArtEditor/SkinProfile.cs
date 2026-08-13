@@ -30,6 +30,15 @@ public static class AssetKeys
         CharSelect, CharSelectLocked, CharSelectBg,
         CharacterIcon, CharacterIconOutline, MapMarker
     ];
+
+    /// <summary>Slots the user can browse/clear. Locked portrait and icon outline are auto-derived.</summary>
+    public static readonly string[] UserSelectable =
+    [
+        IdleLoop, Attack, Cast, Hurt, Die,
+        RelaxedLoop, RestLoop,
+        CharSelect, CharSelectBg,
+        CharacterIcon, MapMarker
+    ];
 }
 
 public sealed class SkinProfileDto

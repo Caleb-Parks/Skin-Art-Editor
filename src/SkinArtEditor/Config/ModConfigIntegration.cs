@@ -61,14 +61,14 @@ public static class ModConfigIntegration
         list.Add(Entry(entryType, configType, "enabled", "Toggle", "Enabled",
             "Enable custom skins for this character.", dto.Enabled));
         list.Add(Entry(entryType, configType, "knockout", "Toggle", "Knock out backdrops",
-            "Combat/shop/rest + icon/map marker: clear edge-connected near-black backgrounds when copying. Char-select portraits/BG are never knocked out.",
+            "Combat/shop/rest + icon/map marker: clear edge-connected near-black backgrounds when copying. Locked portrait and icon outline are auto-derived. Char-select portraits/BG are never knocked out.",
             dto.KnockoutBackdrop));
         list.Add(Entry(entryType, configType, "knockout_threshold", "TextInput", "Knockout threshold",
             "Max r+g+b (0–255) treated as backdrop. Default 18.",
             dto.KnockoutThreshold.ToString(CultureInfo.InvariantCulture)));
         list.Add(Entry(entryType, configType, "sep_assets", "Separator", "", ""));
 
-        foreach (var key in AssetKeys.All)
+        foreach (var key in AssetKeys.UserSelectable)
         {
             dto.Assets.TryGetValue(key, out var current);
             list.Add(Entry(entryType, configType, $"asset_{key}", "TextInput", key,
@@ -165,7 +165,7 @@ public static class ModConfigIntegration
                 var dto = SkinProfileLoader.LoadDtoOrDefault(_selectedCharacter);
                 ApplyKnockoutSettingsFromModConfig(dto);
                 var rel = AssetCopier.CopyAsset(
-                    _selectedCharacter, key, path, dto.KnockoutBackdrop, dto.KnockoutThreshold);
+                    _selectedCharacter, key, path, dto.KnockoutBackdrop, dto.KnockoutThreshold, dto);
                 dto.Assets[key] = rel;
                 if (string.Equals(key, AssetKeys.CharSelectBg, StringComparison.OrdinalIgnoreCase))
                 {
@@ -206,7 +206,7 @@ public static class ModConfigIntegration
         dto.Enabled = GetModConfigValue("enabled", dto.Enabled);
         ApplyKnockoutSettingsFromModConfig(dto);
 
-        foreach (var key in AssetKeys.All)
+        foreach (var key in AssetKeys.UserSelectable)
         {
             var path = GetModConfigValue($"asset_{key}", dto.Assets.GetValueOrDefault(key) ?? "");
             if (string.IsNullOrWhiteSpace(path))
@@ -220,7 +220,7 @@ public static class ModConfigIntegration
                 try
                 {
                     dto.Assets[key] = AssetCopier.CopyAsset(
-                        _selectedCharacter, key, path, dto.KnockoutBackdrop, dto.KnockoutThreshold);
+                        _selectedCharacter, key, path, dto.KnockoutBackdrop, dto.KnockoutThreshold, dto);
                 }
                 catch (Exception ex) { Log.Warn($"Copy {key} failed: {ex.Message}"); }
             }
@@ -249,6 +249,7 @@ public static class ModConfigIntegration
         dto.Offsets.CharSelectBgOffsetX = bgOffset[0];
         dto.Offsets.CharSelectBgOffsetY = bgOffset[1];
 
+        DerivedUiArt.EnsureAll(_selectedCharacter, dto);
         SkinProfileLoader.Save(dto);
         SkinRegistry.ReloadAll();
         Log.Info("Saved skin config. Restart the game to fully apply scene overrides.");

@@ -19,17 +19,20 @@ Slay the Spire 2 mod that lets you configure **custom static-PNG character skins
 | `idle_loop`, `attack`, `cast`, `hurt`, `die` | Combat | All five required to replace Spine combat; backdrop knockout on copy |
 | `relaxed_loop` | Shop | Optional; backdrop knockout on copy |
 | `rest_loop` | Campfire / rest site | Optional; backdrop knockout on copy |
-| `char_select`, `char_select_locked` | Character select portraits | Optional each (no knockout — keep opaque) |
+| `char_select` | Character select portrait | Optional (no knockout). Auto-generates `char_select_locked` |
 | `char_select_bg` | Character select background | Optional (no knockout). Framed at runtime: Cassiopeia contain → 1.2× zoom → top + 10% left |
-| `character_icon`, `character_icon_outline` | Top panel, stats, bestiary, card-library filters | Icon scene + `IconTexture` + baked filter retexture; backdrop knockout on copy |
+| `character_icon` | Top panel, stats, bestiary, card-library filters | Backdrop knockout on copy; auto-generates `character_icon_outline` |
 | `map_marker` | Map marker | Optional; backdrop knockout on copy |
+
+`char_select_locked` and `character_icon_outline` are **not** browsable — they are derived on Browse/Save (Cassiopeia dark-grayscale locked portrait and white silhouette outline).
 
 ## Backdrop knockout
 
 When browsing/saving eligible art, the mod can clear an **edge-connected near-black** backdrop (same algorithm as Cassiopeia’s `make-custom-png-skin` / `knockout_backdrop.py`):
 
-- Applies to combat/shop/rest poses, `character_icon`, `character_icon_outline`, and `map_marker`
+- Applies to combat/shop/rest poses, `character_icon`, and `map_marker`
 - Does **not** apply to char-select portraits or `char_select_bg` (those should stay opaque)
+- `character_icon_outline` is derived from the knocked-out `character_icon` (not knocked out separately)
 - Only pixels connected to the image border with `r+g+b <= threshold` (default **18**) become transparent
 - Interior dark pixels stay opaque
 - Already-transparent art is effectively unchanged

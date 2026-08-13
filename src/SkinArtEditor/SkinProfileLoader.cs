@@ -177,7 +177,7 @@ public static class AssetCopier
     public static string CopyAsset(string characterId, string assetKey, string sourcePath)
     {
         var dto = SkinProfileLoader.LoadDtoOrDefault(characterId);
-        return CopyAsset(characterId, assetKey, sourcePath, dto.KnockoutBackdrop, dto.KnockoutThreshold);
+        return CopyAsset(characterId, assetKey, sourcePath, dto.KnockoutBackdrop, dto.KnockoutThreshold, dto);
     }
 
     public static string CopyAsset(
@@ -185,7 +185,8 @@ public static class AssetCopier
         string assetKey,
         string sourcePath,
         bool knockoutBackdrop,
-        int knockoutThreshold)
+        int knockoutThreshold,
+        SkinProfileDto? dto = null)
     {
         if (!File.Exists(sourcePath))
             throw new FileNotFoundException("Selected art file not found", sourcePath);
@@ -216,10 +217,25 @@ public static class AssetCopier
             Log.Info($"Copied {sourcePath} -> {destPath}");
         }
 
+        if (DerivedUiArt.DerivedKeyForParent(assetKey) != null)
+        {
+            dto ??= SkinProfileLoader.LoadDtoOrDefault(characterId);
+            DerivedUiArt.WriteDerivedFromParent(characterId, assetKey, destPath, dto);
+        }
+
         return destName;
     }
 
     public static void ClearAsset(string characterId, string assetKey, SkinProfileDto dto)
+    {
+        ClearOne(characterId, assetKey, dto);
+
+        var derived = DerivedUiArt.DerivedKeyForParent(assetKey);
+        if (derived != null)
+            ClearOne(characterId, derived, dto);
+    }
+
+    private static void ClearOne(string characterId, string assetKey, SkinProfileDto dto)
     {
         if (dto.Assets.TryGetValue(assetKey, out var relative) && !string.IsNullOrWhiteSpace(relative))
         {

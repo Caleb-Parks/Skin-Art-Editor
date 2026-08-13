@@ -115,7 +115,7 @@ public partial class NativeSettingsUi : CanvasLayer
         root.AddChild(threshRow);
         root.AddChild(new Label
         {
-            Text = "Knockout runs on Browse/Save for combat/shop/rest, character_icon, outline, and map_marker. Char-select art is never knocked out.",
+            Text = "Knockout runs on Browse/Save for combat/shop/rest, character_icon, and map_marker. Locked portrait and icon outline are auto-derived. Char-select art is never knocked out.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         });
 
@@ -129,7 +129,7 @@ public partial class NativeSettingsUi : CanvasLayer
         scroll.AddChild(list);
 
         list.AddChild(new Label { Text = "Assets" });
-        foreach (var key in AssetKeys.All)
+        foreach (var key in AssetKeys.UserSelectable)
         {
             var row = new HBoxContainer();
             row.AddChild(new Label { Text = key, CustomMinimumSize = new Vector2(160, 0) });
@@ -204,7 +204,7 @@ public partial class NativeSettingsUi : CanvasLayer
         _enabled.ButtonPressed = dto.Enabled;
         _knockout.ButtonPressed = dto.KnockoutBackdrop;
         _knockoutThreshold.Text = dto.KnockoutThreshold.ToString(CultureInfo.InvariantCulture);
-        foreach (var key in AssetKeys.All)
+        foreach (var key in AssetKeys.UserSelectable)
         {
             dto.Assets.TryGetValue(key, out var val);
             _assetFields[key].Text = val ?? "";
@@ -240,7 +240,7 @@ public partial class NativeSettingsUi : CanvasLayer
 
             dto.Assets.Clear();
 
-            foreach (var key in AssetKeys.All)
+            foreach (var key in AssetKeys.UserSelectable)
             {
                 var text = _assetFields[key].Text.Trim();
                 if (string.IsNullOrEmpty(text))
@@ -249,7 +249,7 @@ public partial class NativeSettingsUi : CanvasLayer
                 if (Path.IsPathRooted(text) && File.Exists(text))
                 {
                     dto.Assets[key] = AssetCopier.CopyAsset(
-                        _characterId, key, text, dto.KnockoutBackdrop, dto.KnockoutThreshold);
+                        _characterId, key, text, dto.KnockoutBackdrop, dto.KnockoutThreshold, dto);
                 }
                 else
                     dto.Assets[key] = text;
@@ -273,6 +273,7 @@ public partial class NativeSettingsUi : CanvasLayer
             o.CharSelectBgOffsetX = bgOffset[0];
             o.CharSelectBgOffsetY = bgOffset[1];
 
+            DerivedUiArt.EnsureAll(_characterId, dto);
             SkinProfileLoader.Save(dto);
             SkinRegistry.ReloadAll();
             _status.Text = "Saved. Restart the game to apply scene/texture overrides.";
