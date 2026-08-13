@@ -104,7 +104,7 @@ public partial class NativeSettingsUi : CanvasLayer
 
         _knockout = new CheckButton
         {
-            Text = "Knock out pose backdrops (combat/shop/rest)"
+            Text = "Knock out backdrops (poses + icon/map marker)"
         };
         root.AddChild(_knockout);
 
@@ -115,7 +115,7 @@ public partial class NativeSettingsUi : CanvasLayer
         root.AddChild(threshRow);
         root.AddChild(new Label
         {
-            Text = "Knockout runs on Browse/Save for poses only. UI images are never knocked out.",
+            Text = "Knockout runs on Browse/Save for combat/shop/rest, character_icon, outline, and map_marker. Char-select art is never knocked out.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         });
 

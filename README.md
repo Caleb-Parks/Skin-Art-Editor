@@ -8,7 +8,7 @@ Slay the Spire 2 mod that lets you configure **custom static-PNG character skins
 - Optional assets: missing slots keep **vanilla** art
 - Combat is all-or-nothing (needs all five poses); shop/rest/UI are independent
 - Configurable offsets (combat, FormVfx, shop, rest)
-- **Pose backdrop knockout** (Cassiopeia-style): solid near-black backgrounds on combat/shop/rest PNGs are cleared when copying
+- **Backdrop knockout** (Cassiopeia-style): solid near-black backgrounds on combat/shop/rest, icon, and map-marker PNGs are cleared when copying
 - **ModConfig** integration when installed; otherwise press **F8** for the fallback UI
 - Restart the game after saving to apply scene overrides
 
@@ -19,19 +19,21 @@ Slay the Spire 2 mod that lets you configure **custom static-PNG character skins
 | `idle_loop`, `attack`, `cast`, `hurt`, `die` | Combat | All five required to replace Spine combat; backdrop knockout on copy |
 | `relaxed_loop` | Shop | Optional; backdrop knockout on copy |
 | `rest_loop` | Campfire / rest site | Optional; backdrop knockout on copy |
-| `char_select`, `char_select_locked` | Character select portraits | Optional each (no knockout) |
-| `char_select_bg` | Character select background | Optional (no knockout) |
-| `character_icon`, `character_icon_outline` | Top panel, stats, bestiary, card-library filters | Icon scene + `IconTexture` + baked filter retexture (no knockout) |
-| `map_marker` | Map marker | Optional (no knockout) |
+| `char_select`, `char_select_locked` | Character select portraits | Optional each (no knockout — keep opaque) |
+| `char_select_bg` | Character select background | Optional (no knockout — keep opaque) |
+| `character_icon`, `character_icon_outline` | Top panel, stats, bestiary, card-library filters | Icon scene + `IconTexture` + baked filter retexture; backdrop knockout on copy |
+| `map_marker` | Map marker | Optional; backdrop knockout on copy |
 
-## Pose backdrop knockout
+## Backdrop knockout
 
-When browsing/saving combat, shop, or rest art, the mod can clear an **edge-connected near-black** backdrop (same algorithm as Cassiopeia’s `make-custom-png-skin` / `knockout_backdrop.py`):
+When browsing/saving eligible art, the mod can clear an **edge-connected near-black** backdrop (same algorithm as Cassiopeia’s `make-custom-png-skin` / `knockout_backdrop.py`):
 
+- Applies to combat/shop/rest poses, `character_icon`, `character_icon_outline`, and `map_marker`
+- Does **not** apply to char-select portraits or `char_select_bg` (those should stay opaque)
 - Only pixels connected to the image border with `r+g+b <= threshold` (default **18**) become transparent
 - Interior dark pixels stay opaque
 - Already-transparent art is effectively unchanged
-- UI assets are never knocked out
+- Cassiopeia’s icon master prep sometimes used threshold **36**; raise `knockoutThreshold` if icon backs don’t clear enough
 
 Config fields in `config.json`:
 

@@ -4,14 +4,15 @@ using Godot;
 namespace SkinArtEditor;
 
 /// <summary>
-/// Cassiopeia-style edge-connected near-black backdrop knockout for combat/shop/rest poses.
+/// Cassiopeia-style edge-connected near-black backdrop knockout for combat/shop/rest poses
+/// and character_icon / outline / map_marker. Char-select portraits and BG are never processed.
 /// Only pixels connected to the image border with (r+g+b) &lt;= threshold are cleared.
 /// </summary>
 public static class BackdropKnockout
 {
     public const int DefaultThreshold = 18;
 
-    private static readonly HashSet<string> PoseKeys = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> KnockoutKeys = new(StringComparer.OrdinalIgnoreCase)
     {
         AssetKeys.IdleLoop,
         AssetKeys.Attack,
@@ -19,10 +20,13 @@ public static class BackdropKnockout
         AssetKeys.Hurt,
         AssetKeys.Die,
         AssetKeys.RelaxedLoop,
-        AssetKeys.RestLoop
+        AssetKeys.RestLoop,
+        AssetKeys.CharacterIcon,
+        AssetKeys.CharacterIconOutline,
+        AssetKeys.MapMarker
     };
 
-    public static bool ShouldProcess(string assetKey) => PoseKeys.Contains(assetKey);
+    public static bool ShouldProcess(string assetKey) => KnockoutKeys.Contains(assetKey);
 
     /// <summary>
     /// Load <paramref name="srcPath"/>, knock out edge-connected near-black backdrop, write PNG to <paramref name="dstPath"/>.

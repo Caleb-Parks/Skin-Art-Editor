@@ -60,8 +60,8 @@ public static class ModConfigIntegration
             "Character to configure (v1: Regent only).", "Regent", options: ["Regent"]));
         list.Add(Entry(entryType, configType, "enabled", "Toggle", "Enabled",
             "Enable custom skins for this character.", dto.Enabled));
-        list.Add(Entry(entryType, configType, "knockout", "Toggle", "Knock out pose backdrops",
-            "Combat/shop/rest: clear edge-connected near-black backgrounds when copying (Cassiopeia-style). UI images are never knocked out.",
+        list.Add(Entry(entryType, configType, "knockout", "Toggle", "Knock out backdrops",
+            "Combat/shop/rest + icon/map marker: clear edge-connected near-black backgrounds when copying. Char-select portraits/BG are never knocked out.",
             dto.KnockoutBackdrop));
         list.Add(Entry(entryType, configType, "knockout_threshold", "TextInput", "Knockout threshold",
             "Max r+g+b (0–255) treated as backdrop. Default 18.",
