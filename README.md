@@ -20,7 +20,7 @@ Slay the Spire 2 mod that lets you configure **custom static-PNG character skins
 | `rest_loop` | Campfire / rest site | Optional |
 | `char_select`, `char_select_locked` | Character select portraits | Optional each |
 | `char_select_bg` | Character select background | Optional |
-| `character_icon`, `character_icon_outline` | Top panel | Optional each |
+| `character_icon`, `character_icon_outline` | Top panel, stats, bestiary, card-library filters | Icon scene + `IconTexture` + baked filter retexture |
 | `map_marker` | Map marker | Optional |
 
 ## Offsets (`config.json`)

@@ -75,10 +75,12 @@ public static class TextureCache
 
         try
         {
-            var image = Image.LoadFromFile(absolutePath);
+            // Godot file APIs prefer forward slashes on all platforms.
+            var godotPath = absolutePath.Replace('\\', '/');
+            var image = Image.LoadFromFile(godotPath);
             if (image == null)
             {
-                Log.Warn($"Image.LoadFromFile returned null for {absolutePath}");
+                Log.Warn($"Image.LoadFromFile returned null for {godotPath}");
                 return null;
             }
 
@@ -225,6 +227,136 @@ public static class SkinApplier
             var bg = bgRoot.GetNodeOrNull("Bg") as TextureRect;
             if (bg != null)
                 bg.Texture = tex;
+        }
+    }
+
+    /// <summary>
+    /// Map a vanilla res:// character_icon path to a loaded custom texture, if configured.
+    /// </summary>
+    public static bool TryOverrideTopPanelIconPath(string? path, out Texture2D texture)
+    {
+        texture = null!;
+        if (string.IsNullOrEmpty(path))
+            return false;
+
+        var normalized = path.Replace('\\', '/');
+        const string marker = "character_icon_";
+        var idx = normalized.LastIndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (idx < 0)
+            return false;
+
+        var file = Path.GetFileNameWithoutExtension(normalized);
+        // character_icon_regent or character_icon_regent_outline
+        if (!file.StartsWith(marker, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var rest = file.Substring(marker.Length);
+        var isOutline = rest.EndsWith("_outline", StringComparison.OrdinalIgnoreCase);
+        var slug = isOutline ? rest[..^"_outline".Length] : rest;
+        if (string.IsNullOrEmpty(slug))
+            return false;
+
+        if (!SkinRegistry.TryGet(slug, out var profile))
+            return false;
+
+        var key = isOutline ? AssetKeys.CharacterIconOutline : AssetKeys.CharacterIcon;
+        var loaded = TextureCache.LoadAsset(profile, key);
+        if (loaded == null)
+            return false;
+
+        texture = loaded;
+        return true;
+    }
+
+    /// <summary>Retexture a Control or TextureRect that displays a character top-panel icon.</summary>
+    public static void ApplyCharacterIconToNode(Node node, SkinProfile profile)
+    {
+        if (node is TextureRect tr)
+        {
+            var icon = TextureCache.LoadAsset(profile, AssetKeys.CharacterIcon);
+            if (icon != null)
+                tr.Texture = icon;
+            return;
+        }
+
+        ApplyCharacterIconScene(node, profile);
+    }
+
+    /// <summary>
+    /// Retexture a vanilla character Icon Control (top bar / stats).
+    /// Those scenes bake TextureRects that reference character_icon_*.png — IconTexture alone is unused there.
+    /// </summary>
+    public static bool ApplyCharacterIconScene(Node iconRoot, SkinProfile profile)
+    {
+        var icon = TextureCache.LoadAsset(profile, AssetKeys.CharacterIcon);
+        var outline = TextureCache.LoadAsset(profile, AssetKeys.CharacterIconOutline);
+        if (icon == null && outline == null)
+            return false;
+
+        var rects = new List<TextureRect>();
+        CollectTextureRects(iconRoot, rects);
+        if (rects.Count == 0)
+        {
+            Log.Warn($"[{profile.CharacterId}] Icon control has no TextureRect children to retexture");
+            return false;
+        }
+
+        var replaced = 0;
+        foreach (var tr in rects)
+        {
+            var path = tr.Texture?.ResourcePath ?? "";
+            var name = tr.Name.ToString();
+            var isOutline =
+                path.Contains("outline", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("outline", StringComparison.OrdinalIgnoreCase);
+
+            if (isOutline)
+            {
+                if (outline == null)
+                    continue;
+                tr.Texture = outline;
+                replaced++;
+                continue;
+            }
+
+            if (icon == null)
+                continue;
+
+            // Match baked top-panel character icons, or small icon scenes with only 1–2 rects.
+            if (path.Contains("character_icon", StringComparison.OrdinalIgnoreCase) ||
+                path.Contains("top_panel", StringComparison.OrdinalIgnoreCase) ||
+                string.IsNullOrEmpty(path) ||
+                rects.Count <= 2)
+            {
+                tr.Texture = icon;
+                replaced++;
+            }
+        }
+
+        if (replaced == 0 && icon != null)
+        {
+            rects[^1].Texture = icon;
+            replaced++;
+            if (outline != null && rects.Count >= 2)
+            {
+                rects[0].Texture = outline;
+                replaced++;
+            }
+        }
+
+        if (replaced > 0)
+            Log.Info($"[{profile.CharacterId}] Applied character icon textures to Icon scene ({replaced} rects)");
+        return replaced > 0;
+    }
+
+    private static void CollectTextureRects(Node node, List<TextureRect> into)
+    {
+        if (node is TextureRect tr)
+            into.Add(tr);
+        foreach (var child in node.GetChildren())
+        {
+            if (child is Node n)
+                CollectTextureRects(n, into);
         }
     }
 
