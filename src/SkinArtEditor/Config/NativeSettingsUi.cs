@@ -11,6 +11,8 @@ public partial class NativeSettingsUi : CanvasLayer
 {
     private OptionButton _character = null!;
     private CheckButton _enabled = null!;
+    private CheckButton _knockout = null!;
+    private LineEdit _knockoutThreshold = null!;
     private readonly Dictionary<string, LineEdit> _assetFields = new();
     private readonly Dictionary<string, LineEdit> _offsetFields = new();
     private Label _status = null!;
@@ -100,6 +102,23 @@ public partial class NativeSettingsUi : CanvasLayer
         _enabled = new CheckButton { Text = "Enabled" };
         root.AddChild(_enabled);
 
+        _knockout = new CheckButton
+        {
+            Text = "Knock out pose backdrops (combat/shop/rest)"
+        };
+        root.AddChild(_knockout);
+
+        var threshRow = new HBoxContainer();
+        threshRow.AddChild(new Label { Text = "Knockout threshold", CustomMinimumSize = new Vector2(160, 0) });
+        _knockoutThreshold = new LineEdit { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        threshRow.AddChild(_knockoutThreshold);
+        root.AddChild(threshRow);
+        root.AddChild(new Label
+        {
+            Text = "Knockout runs on Browse/Save for poses only. UI images are never knocked out.",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        });
+
         var scroll = new ScrollContainer
         {
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
@@ -171,6 +190,8 @@ public partial class NativeSettingsUi : CanvasLayer
     {
         var dto = SkinProfileLoader.LoadDtoOrDefault(_characterId);
         _enabled.ButtonPressed = dto.Enabled;
+        _knockout.ButtonPressed = dto.KnockoutBackdrop;
+        _knockoutThreshold.Text = dto.KnockoutThreshold.ToString(CultureInfo.InvariantCulture);
         foreach (var key in AssetKeys.All)
         {
             dto.Assets.TryGetValue(key, out var val);
@@ -197,6 +218,12 @@ public partial class NativeSettingsUi : CanvasLayer
         {
             var dto = SkinProfileLoader.LoadDtoOrDefault(_characterId);
             dto.Enabled = _enabled.ButtonPressed;
+            dto.KnockoutBackdrop = _knockout.ButtonPressed;
+            if (int.TryParse(_knockoutThreshold.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var thr) && thr >= 0)
+                dto.KnockoutThreshold = thr;
+            else
+                dto.KnockoutThreshold = BackdropKnockout.DefaultThreshold;
+
             dto.Assets.Clear();
 
             foreach (var key in AssetKeys.All)
@@ -206,7 +233,10 @@ public partial class NativeSettingsUi : CanvasLayer
                     continue;
 
                 if (Path.IsPathRooted(text) && File.Exists(text))
-                    dto.Assets[key] = AssetCopier.CopyAsset(_characterId, key, text);
+                {
+                    dto.Assets[key] = AssetCopier.CopyAsset(
+                        _characterId, key, text, dto.KnockoutBackdrop, dto.KnockoutThreshold);
+                }
                 else
                     dto.Assets[key] = text;
             }

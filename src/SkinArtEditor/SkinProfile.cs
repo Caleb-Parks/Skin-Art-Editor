@@ -40,6 +40,14 @@ public sealed class SkinProfileDto
     [JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = true;
 
+    /// <summary>Clear edge-connected near-black backdrop on combat/shop/rest poses when copying.</summary>
+    [JsonPropertyName("knockoutBackdrop")]
+    public bool KnockoutBackdrop { get; set; } = true;
+
+    /// <summary>Max r+g+b (0–255 scale) treated as backdrop black. Cassiopeia default: 18.</summary>
+    [JsonPropertyName("knockoutThreshold")]
+    public int KnockoutThreshold { get; set; } = BackdropKnockout.DefaultThreshold;
+
     [JsonPropertyName("assets")]
     public Dictionary<string, string?> Assets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 

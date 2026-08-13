@@ -176,20 +176,46 @@ public static class AssetCopier
 {
     public static string CopyAsset(string characterId, string assetKey, string sourcePath)
     {
+        var dto = SkinProfileLoader.LoadDtoOrDefault(characterId);
+        return CopyAsset(characterId, assetKey, sourcePath, dto.KnockoutBackdrop, dto.KnockoutThreshold);
+    }
+
+    public static string CopyAsset(
+        string characterId,
+        string assetKey,
+        string sourcePath,
+        bool knockoutBackdrop,
+        int knockoutThreshold)
+    {
         if (!File.Exists(sourcePath))
             throw new FileNotFoundException("Selected art file not found", sourcePath);
 
         var dir = ModPaths.CharacterDir(characterId);
         Directory.CreateDirectory(dir);
 
-        var ext = Path.GetExtension(sourcePath);
+        var shouldKnock =
+            knockoutBackdrop &&
+            BackdropKnockout.ShouldProcess(assetKey);
+
+        // Processed poses always land as .png; UI/other assets keep source extension.
+        var ext = shouldKnock ? ".png" : Path.GetExtension(sourcePath);
         if (string.IsNullOrWhiteSpace(ext))
             ext = ".png";
 
         var destName = assetKey + ext.ToLowerInvariant();
         var destPath = Path.Combine(dir, destName);
-        File.Copy(sourcePath, destPath, overwrite: true);
-        Log.Info($"Copied {sourcePath} -> {destPath}");
+
+        if (shouldKnock)
+        {
+            var threshold = knockoutThreshold > 0 ? knockoutThreshold : BackdropKnockout.DefaultThreshold;
+            BackdropKnockout.ProcessFile(sourcePath, destPath, threshold);
+        }
+        else
+        {
+            File.Copy(sourcePath, destPath, overwrite: true);
+            Log.Info($"Copied {sourcePath} -> {destPath}");
+        }
+
         return destName;
     }
 

@@ -1,6 +1,8 @@
 {
   "characterId": "regent",
   "enabled": true,
+  "knockoutBackdrop": true,
+  "knockoutThreshold": 18,
   "assets": {
     "idle_loop": "idle_loop.png",
     "attack": "attack.png",
