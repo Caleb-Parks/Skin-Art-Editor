@@ -1,6 +1,6 @@
 # Skin Art Editor
 
-Slay the Spire 2 mod that lets you configure **custom static-PNG character skins** from files on disk. v1 is a **Regent** vertical slice (Cassiopeia-style Wishkeeper poses).
+Slay the Spire 2 mod that lets you configure **custom static-PNG character skins** from files on disk. Ships with a **Regent** sample profile (Cassiopeia-style Wishkeeper poses); additional characters are folder-driven.
 
 ## Features
 
@@ -49,12 +49,25 @@ Toggle these in ModConfig or the F8 panel. Changing threshold does not reprocess
 
 ## Offsets (`config.json`)
 
-Defaults match Cassiopeia’s tuned Regent values. They only apply when that context is overridden.
+DTO defaults are **neutral** (scale 1, zero offsets, char-select BG uses Cassiopeia contain framing). Character-specific tuning belongs in each profile — Regent’s Cassiopeia values live in [`characters/regent/config.json`](characters/regent/config.json).
 
 - **Combat:** `combatVisualsPosition`, `combatVisualsScale`, `combatBottomPaddingPx`, `formVfxPosition`
 - **Shop:** `shopSpriteOffset`, `shopSpriteScale`
 - **Rest:** `restDisplayOffset`, `restSpriteScale`, `restSeatAnchor`, `restVisibleBounds`
-- **Char select BG:** `charSelectBgZoom` (default `1.2` after contain-fit), `charSelectBgOffsetX` / `charSelectBgOffsetY` (defaults `-0.1`, `0` = center then shift left 10%, top-aligned). Matches Cassiopeia’s master prep. Browsing a new `char_select_bg` resets these defaults; tweak and restart without re-browsing.
+- **Char select BG:** `charSelectBgZoom` (default `1.2` after contain-fit), `charSelectBgOffsetX` / `charSelectBgOffsetY` (defaults `-0.1`, `0`). Browsing a new `char_select_bg` resets these.
+
+They only apply when that context is overridden.
+
+## Shared scene limits (still global)
+
+PNG merchant/rest/combat templates are shared across characters. Per-profile offsets cover sprite placement/scale; these remain **scene-global** until a later pass:
+
+- Rest-site hitbox / selection reticle / thought-bubble positions and root transform in `png_rest_site.tscn`
+- Combat intent/marker layout baked into `png_combat.tscn`
+- Animator trigger aliases (e.g. Regent `Attack_Sovereign` → attack) in `png_animator.gd`
+- Card-library pool icon paths are still mapped per vanilla character id in code when adding new characters
+
+Add a new character by creating `characters/<slug>/config.json` (folder name = game character id slug). The settings dropdown scans that folder automatically.
 
 ## Build / deploy
 

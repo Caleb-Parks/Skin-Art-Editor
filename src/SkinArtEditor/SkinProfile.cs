@@ -67,34 +67,34 @@ public sealed class SkinProfileDto
 public sealed class SkinOffsetsDto
 {
     [JsonPropertyName("combatVisualsPosition")]
-    public float[] CombatVisualsPosition { get; set; } = [0f, 3.91293f];
+    public float[] CombatVisualsPosition { get; set; } = [0f, 0f];
 
     [JsonPropertyName("combatVisualsScale")]
-    public float CombatVisualsScale { get; set; } = 0.31011f;
+    public float CombatVisualsScale { get; set; } = 1f;
 
     [JsonPropertyName("combatBottomPaddingPx")]
     public float CombatBottomPaddingPx { get; set; } = 32f;
 
     [JsonPropertyName("formVfxPosition")]
-    public float[] FormVfxPosition { get; set; } = [-17.5f, 0f];
+    public float[] FormVfxPosition { get; set; } = [0f, 0f];
 
     [JsonPropertyName("shopSpriteOffset")]
-    public float[] ShopSpriteOffset { get; set; } = [0f, -428.4f];
+    public float[] ShopSpriteOffset { get; set; } = [0f, 0f];
 
     [JsonPropertyName("shopSpriteScale")]
-    public float ShopSpriteScale { get; set; } = 0.456134f;
+    public float ShopSpriteScale { get; set; } = 1f;
 
     [JsonPropertyName("restDisplayOffset")]
-    public float[] RestDisplayOffset { get; set; } = [-173.983f, 150.047f];
+    public float[] RestDisplayOffset { get; set; } = [0f, 0f];
 
     [JsonPropertyName("restSpriteScale")]
-    public float RestSpriteScale { get; set; } = 0.792f;
+    public float RestSpriteScale { get; set; } = 1f;
 
     [JsonPropertyName("restSeatAnchor")]
-    public float[] RestSeatAnchor { get; set; } = [0.5f, 0.6f];
+    public float[] RestSeatAnchor { get; set; } = [0.5f, 0.5f];
 
     [JsonPropertyName("restVisibleBounds")]
-    public float[] RestVisibleBounds { get; set; } = [153f, 125f, 767f, 1077f];
+    public float[] RestVisibleBounds { get; set; } = [0f, 0f, 1024f, 1024f];
 
     /// <summary>Zoom after contain-fit into 2560×1200 (Cassiopeia default 1.2).</summary>
     [JsonPropertyName("charSelectBgZoom")]

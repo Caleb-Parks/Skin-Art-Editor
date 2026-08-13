@@ -11,12 +11,12 @@ namespace SkinArtEditor.Config;
 public static class ModConfigIntegration
 {
     private const string ModId = ModPaths.ModId;
-    private static string _selectedCharacter = "regent";
     private static Node? _host;
 
     public static bool TryRegister(Node host)
     {
         _host = host;
+        SkinConfigService.SelectedCharacterId = CharacterCatalog.List()[0].Slug;
 
         var apiType = Type.GetType("ModConfig.ModConfigApi, ModConfig", throwOnError: false);
         var entryType = Type.GetType("ModConfig.ConfigEntry, ModConfig", throwOnError: false);
@@ -52,12 +52,18 @@ public static class ModConfigIntegration
     private static List<object> BuildEntries(Type entryType, Type configType)
     {
         var list = new List<object>();
-        var dto = SkinProfileLoader.LoadDtoOrDefault(_selectedCharacter);
+        var catalog = CharacterCatalog.List();
+        var selected = SkinConfigService.SelectedCharacterId;
+        var dto = SkinProfileLoader.LoadDtoOrDefault(selected);
+        var displayNames = catalog.Select(e => e.DisplayName).ToArray();
+        var selectedDisplay = CharacterCatalog.DisplayNameFor(selected);
 
         list.Add(Entry(entryType, configType, "header_main", "Header", "Skin Art Editor",
             "Per-character PNG skins. Missing slots keep vanilla. Restart after Save."));
         list.Add(Entry(entryType, configType, "character", "Dropdown", "Character",
-            "Character to configure (v1: Regent only).", "Regent", options: ["Regent"]));
+            "Character folder under characters/. Changing this reloads fields for that profile.",
+            selectedDisplay, options: displayNames,
+            onChanged: v => OnCharacterChanged(v?.ToString())));
         list.Add(Entry(entryType, configType, "enabled", "Toggle", "Enabled",
             "Enable custom skins for this character.", dto.Enabled));
         list.Add(Entry(entryType, configType, "knockout", "Toggle", "Knock out backdrops",
@@ -81,39 +87,61 @@ public static class ModConfigIntegration
 
         list.Add(Entry(entryType, configType, "sep_offsets", "Separator", "", ""));
         list.Add(Entry(entryType, configType, "header_offsets", "Header", "Offsets",
-            "Applied only when that context is overridden."));
-        list.Add(Entry(entryType, configType, "combat_pos", "TextInput", "Combat Position X,Y",
-            "", FormatVec(dto.Offsets.CombatVisualsPosition)));
-        list.Add(Entry(entryType, configType, "combat_scale", "TextInput", "Combat Scale",
-            "", dto.Offsets.CombatVisualsScale.ToString(CultureInfo.InvariantCulture)));
-        list.Add(Entry(entryType, configType, "combat_pad", "TextInput", "Combat Bottom Padding",
-            "", dto.Offsets.CombatBottomPaddingPx.ToString(CultureInfo.InvariantCulture)));
-        list.Add(Entry(entryType, configType, "form_vfx", "TextInput", "FormVfx Position X,Y",
-            "", FormatVec(dto.Offsets.FormVfxPosition)));
-        list.Add(Entry(entryType, configType, "shop_offset", "TextInput", "Shop Offset X,Y",
-            "", FormatVec(dto.Offsets.ShopSpriteOffset)));
-        list.Add(Entry(entryType, configType, "shop_scale", "TextInput", "Shop Scale",
-            "", dto.Offsets.ShopSpriteScale.ToString(CultureInfo.InvariantCulture)));
-        list.Add(Entry(entryType, configType, "rest_offset", "TextInput", "Rest Offset X,Y",
-            "", FormatVec(dto.Offsets.RestDisplayOffset)));
-        list.Add(Entry(entryType, configType, "rest_scale", "TextInput", "Rest Scale",
-            "", dto.Offsets.RestSpriteScale.ToString(CultureInfo.InvariantCulture)));
-        list.Add(Entry(entryType, configType, "rest_anchor", "TextInput", "Rest Seat Anchor X,Y",
-            "", FormatVec(dto.Offsets.RestSeatAnchor)));
-        list.Add(Entry(entryType, configType, "rest_bounds", "TextInput", "Rest Visible Bounds X,Y,W,H",
-            "", FormatVec(dto.Offsets.RestVisibleBounds)));
-        list.Add(Entry(entryType, configType, "char_select_bg_zoom", "TextInput", "Char Select BG Zoom",
-            "Zoom after contain-fit into 2560×1200 (Cassiopeia default 1.2). Restart after Save.",
-            dto.Offsets.CharSelectBgZoom.ToString(CultureInfo.InvariantCulture)));
-        list.Add(Entry(entryType, configType, "char_select_bg_offset", "TextInput", "Char Select BG Offset X,Y",
-            "Extra shift after centering/top-align (fractions of canvas). Cassiopeia default -0.1, 0. Browsing a new BG resets these.",
-            FormatVec([dto.Offsets.CharSelectBgOffsetX, dto.Offsets.CharSelectBgOffsetY])));
+            "Applied only when that context is overridden. Tuned per character in config.json."));
+        foreach (var (key, value) in SkinConfigService.ReadOffsetFields(dto.Offsets))
+        {
+            var label = OffsetLabel(key);
+            var desc = key.StartsWith("char_select_bg", StringComparison.Ordinal)
+                ? "Cassiopeia-style contain framing. Browsing a new BG resets zoom/offset defaults."
+                : "";
+            list.Add(Entry(entryType, configType, key, "TextInput", label, desc, value));
+        }
 
         list.Add(Entry(entryType, configType, "save", "Button", "Save / Apply",
             "Write config + copy absolute paths into the mod folder. Restart to apply.",
             onChanged: _ => SaveFromModConfig()));
 
         return list;
+    }
+
+    private static string OffsetLabel(string key) => key switch
+    {
+        "combat_pos" => "Combat Position X,Y",
+        "combat_scale" => "Combat Scale",
+        "combat_pad" => "Combat Bottom Padding",
+        "form_vfx" => "FormVfx Position X,Y",
+        "shop_offset" => "Shop Offset X,Y",
+        "shop_scale" => "Shop Scale",
+        "rest_offset" => "Rest Offset X,Y",
+        "rest_scale" => "Rest Scale",
+        "rest_anchor" => "Rest Seat Anchor X,Y",
+        "rest_bounds" => "Rest Visible Bounds X,Y,W,H",
+        "char_select_bg_zoom" => "Char Select BG Zoom",
+        "char_select_bg_offset" => "Char Select BG Offset X,Y",
+        _ => key
+    };
+
+    private static void OnCharacterChanged(string? display)
+    {
+        SkinConfigService.SelectedCharacterId = CharacterCatalog.SlugFromDisplay(display);
+        PushDtoToModConfig(SkinProfileLoader.LoadDtoOrDefault(SkinConfigService.SelectedCharacterId));
+        Log.Info($"ModConfig character → {SkinConfigService.SelectedCharacterId}");
+    }
+
+    private static void PushDtoToModConfig(SkinProfileDto dto)
+    {
+        SetModConfigValue("enabled", dto.Enabled);
+        SetModConfigValue("knockout", dto.KnockoutBackdrop);
+        SetModConfigValue("knockout_threshold",
+            dto.KnockoutThreshold.ToString(CultureInfo.InvariantCulture));
+        foreach (var key in AssetKeys.UserSelectable)
+        {
+            dto.Assets.TryGetValue(key, out var val);
+            SetModConfigValue($"asset_{key}", val ?? "");
+        }
+
+        foreach (var (key, value) in SkinConfigService.ReadOffsetFields(dto.Offsets))
+            SetModConfigValue(key, value);
     }
 
     private static object Entry(
@@ -158,26 +186,30 @@ public static class ModConfigIntegration
             return;
         }
 
+        var characterId = SkinConfigService.SelectedCharacterId;
         FileBrowseHelper.BrowsePng(_host, $"Select {key}.png", path =>
         {
             try
             {
-                var dto = SkinProfileLoader.LoadDtoOrDefault(_selectedCharacter);
-                ApplyKnockoutSettingsFromModConfig(dto);
-                var rel = AssetCopier.CopyAsset(
-                    _selectedCharacter, key, path, dto.KnockoutBackdrop, dto.KnockoutThreshold, dto);
-                dto.Assets[key] = rel;
+                var dto = SkinProfileLoader.LoadDtoOrDefault(characterId);
+                dto.KnockoutBackdrop = GetModConfigValue("knockout", dto.KnockoutBackdrop);
+                dto.KnockoutThreshold = SkinConfigService.ParseThreshold(
+                    GetModConfigValue("knockout_threshold",
+                        dto.KnockoutThreshold.ToString(CultureInfo.InvariantCulture)),
+                    BackdropKnockout.DefaultThreshold);
+
+                SkinConfigService.SetUserAsset(characterId, dto, key, path);
+                SkinConfigService.SaveAndReload(dto);
+                SetModConfigValue($"asset_{key}", dto.Assets.GetValueOrDefault(key) ?? "");
                 if (string.Equals(key, AssetKeys.CharSelectBg, StringComparison.OrdinalIgnoreCase))
                 {
-                    CharSelectBgFramer.ApplyCassiopeiaDefaults(dto.Offsets);
                     SetModConfigValue("char_select_bg_zoom",
                         dto.Offsets.CharSelectBgZoom.ToString(CultureInfo.InvariantCulture));
                     SetModConfigValue("char_select_bg_offset",
-                        FormatVec([dto.Offsets.CharSelectBgOffsetX, dto.Offsets.CharSelectBgOffsetY]));
+                        SkinConfigService.FormatVec([dto.Offsets.CharSelectBgOffsetX, dto.Offsets.CharSelectBgOffsetY]));
                 }
-                SkinProfileLoader.Save(dto);
-                SetModConfigValue($"asset_{key}", rel);
-                Log.Info($"Set {key} = {rel}. Restart to apply.");
+
+                Log.Info($"Set {key} = {dto.Assets.GetValueOrDefault(key)}. Restart to apply.");
             }
             catch (Exception ex)
             {
@@ -188,83 +220,54 @@ public static class ModConfigIntegration
 
     private static void ClearKey(string key)
     {
-        var dto = SkinProfileLoader.LoadDtoOrDefault(_selectedCharacter);
-        AssetCopier.ClearAsset(_selectedCharacter, key, dto);
-        SkinProfileLoader.Save(dto);
+        var characterId = SkinConfigService.SelectedCharacterId;
+        var dto = SkinProfileLoader.LoadDtoOrDefault(characterId);
+        AssetCopier.ClearAsset(characterId, key, dto);
+        SkinConfigService.SaveAndReload(dto);
         SetModConfigValue($"asset_{key}", "");
         Log.Info($"Cleared {key}. Restart to restore vanilla for that slot.");
     }
 
     private static void SaveFromModConfig()
     {
-        var charName = GetModConfigValue("character", "Regent");
-        _selectedCharacter = charName.Equals("Regent", StringComparison.OrdinalIgnoreCase)
-            ? "regent"
-            : charName.ToLowerInvariant();
+        var display = GetModConfigValue("character", CharacterCatalog.DisplayNameFor(SkinConfigService.SelectedCharacterId));
+        SkinConfigService.SelectedCharacterId = CharacterCatalog.SlugFromDisplay(display);
+        var characterId = SkinConfigService.SelectedCharacterId;
 
-        var dto = SkinProfileLoader.LoadDtoOrDefault(_selectedCharacter);
+        var dto = SkinProfileLoader.LoadDtoOrDefault(characterId);
         dto.Enabled = GetModConfigValue("enabled", dto.Enabled);
-        ApplyKnockoutSettingsFromModConfig(dto);
+        dto.KnockoutBackdrop = GetModConfigValue("knockout", dto.KnockoutBackdrop);
+        dto.KnockoutThreshold = SkinConfigService.ParseThreshold(
+            GetModConfigValue("knockout_threshold",
+                dto.KnockoutThreshold.ToString(CultureInfo.InvariantCulture)),
+            BackdropKnockout.DefaultThreshold);
 
         foreach (var key in AssetKeys.UserSelectable)
         {
             var path = GetModConfigValue($"asset_{key}", dto.Assets.GetValueOrDefault(key) ?? "");
             if (string.IsNullOrWhiteSpace(path))
             {
-                dto.Assets.Remove(key);
+                AssetCopier.ClearAsset(characterId, key, dto);
                 continue;
             }
 
-            if (Path.IsPathRooted(path) && File.Exists(path))
+            try
             {
-                try
-                {
-                    dto.Assets[key] = AssetCopier.CopyAsset(
-                        _selectedCharacter, key, path, dto.KnockoutBackdrop, dto.KnockoutThreshold, dto);
-                }
-                catch (Exception ex) { Log.Warn($"Copy {key} failed: {ex.Message}"); }
+                SkinConfigService.SetUserAsset(characterId, dto, key, path);
             }
-            else
+            catch (Exception ex)
             {
-                dto.Assets[key] = path;
+                Log.Warn($"Copy {key} failed: {ex.Message}");
             }
         }
 
-        dto.Offsets.CombatVisualsPosition = ParseVec(GetModConfigValue("combat_pos", FormatVec(dto.Offsets.CombatVisualsPosition)), dto.Offsets.CombatVisualsPosition);
-        dto.Offsets.CombatVisualsScale = ParseFloat(GetModConfigValue("combat_scale", dto.Offsets.CombatVisualsScale.ToString(CultureInfo.InvariantCulture)), dto.Offsets.CombatVisualsScale);
-        dto.Offsets.CombatBottomPaddingPx = ParseFloat(GetModConfigValue("combat_pad", dto.Offsets.CombatBottomPaddingPx.ToString(CultureInfo.InvariantCulture)), dto.Offsets.CombatBottomPaddingPx);
-        dto.Offsets.FormVfxPosition = ParseVec(GetModConfigValue("form_vfx", FormatVec(dto.Offsets.FormVfxPosition)), dto.Offsets.FormVfxPosition);
-        dto.Offsets.ShopSpriteOffset = ParseVec(GetModConfigValue("shop_offset", FormatVec(dto.Offsets.ShopSpriteOffset)), dto.Offsets.ShopSpriteOffset);
-        dto.Offsets.ShopSpriteScale = ParseFloat(GetModConfigValue("shop_scale", dto.Offsets.ShopSpriteScale.ToString(CultureInfo.InvariantCulture)), dto.Offsets.ShopSpriteScale);
-        dto.Offsets.RestDisplayOffset = ParseVec(GetModConfigValue("rest_offset", FormatVec(dto.Offsets.RestDisplayOffset)), dto.Offsets.RestDisplayOffset);
-        dto.Offsets.RestSpriteScale = ParseFloat(GetModConfigValue("rest_scale", dto.Offsets.RestSpriteScale.ToString(CultureInfo.InvariantCulture)), dto.Offsets.RestSpriteScale);
-        dto.Offsets.RestSeatAnchor = ParseVec(GetModConfigValue("rest_anchor", FormatVec(dto.Offsets.RestSeatAnchor)), dto.Offsets.RestSeatAnchor);
-        dto.Offsets.RestVisibleBounds = ParseBounds(GetModConfigValue("rest_bounds", FormatVec(dto.Offsets.RestVisibleBounds)), dto.Offsets.RestVisibleBounds);
-        dto.Offsets.CharSelectBgZoom = ParseFloat(
-            GetModConfigValue("char_select_bg_zoom", dto.Offsets.CharSelectBgZoom.ToString(CultureInfo.InvariantCulture)),
-            dto.Offsets.CharSelectBgZoom);
-        var bgOffset = ParseVec(
-            GetModConfigValue("char_select_bg_offset", FormatVec([dto.Offsets.CharSelectBgOffsetX, dto.Offsets.CharSelectBgOffsetY])),
-            [dto.Offsets.CharSelectBgOffsetX, dto.Offsets.CharSelectBgOffsetY]);
-        dto.Offsets.CharSelectBgOffsetX = bgOffset[0];
-        dto.Offsets.CharSelectBgOffsetY = bgOffset[1];
+        var offsetFields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var key in SkinConfigService.ReadOffsetFields(dto.Offsets).Keys)
+            offsetFields[key] = GetModConfigValue(key, SkinConfigService.ReadOffsetFields(dto.Offsets)[key]);
+        SkinConfigService.ApplyOffsetFields(dto.Offsets, offsetFields);
 
-        DerivedUiArt.EnsureAll(_selectedCharacter, dto);
-        SkinProfileLoader.Save(dto);
-        SkinRegistry.ReloadAll();
+        SkinConfigService.SaveAndReload(dto);
         Log.Info("Saved skin config. Restart the game to fully apply scene overrides.");
-    }
-
-    private static void ApplyKnockoutSettingsFromModConfig(SkinProfileDto dto)
-    {
-        dto.KnockoutBackdrop = GetModConfigValue("knockout", dto.KnockoutBackdrop);
-        var thresholdText = GetModConfigValue(
-            "knockout_threshold",
-            dto.KnockoutThreshold.ToString(CultureInfo.InvariantCulture));
-        if (int.TryParse(thresholdText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var t) && t >= 0)
-            dto.KnockoutThreshold = t;
-        else
-            dto.KnockoutThreshold = BackdropKnockout.DefaultThreshold;
     }
 
     private static void SetModConfigValue(string key, object value)
@@ -291,36 +294,4 @@ public static class ModConfigIntegration
         catch { /* ignore */ }
         return fallback;
     }
-
-    private static string FormatVec(float[] v) =>
-        string.Join(", ", v.Select(f => f.ToString(CultureInfo.InvariantCulture)));
-
-    private static float[] ParseVec(string s, float[] fallback)
-    {
-        var parts = s.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 2)
-            return fallback;
-        if (!float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var x))
-            return fallback;
-        if (!float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var y))
-            return fallback;
-        return [x, y];
-    }
-
-    private static float[] ParseBounds(string s, float[] fallback)
-    {
-        var parts = s.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 4)
-            return fallback;
-        var arr = new float[4];
-        for (var i = 0; i < 4; i++)
-        {
-            if (!float.TryParse(parts[i], NumberStyles.Float, CultureInfo.InvariantCulture, out arr[i]))
-                return fallback;
-        }
-        return arr;
-    }
-
-    private static float ParseFloat(string s, float fallback) =>
-        float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : fallback;
 }

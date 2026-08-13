@@ -44,11 +44,8 @@ public static class SkinRegistry
     public static string Slug(CharacterModel model) =>
         model.Id.Entry.ToLowerInvariant();
 
-    public static IEnumerable<string> KnownCharacterIds()
-    {
-        // v1: Regent only in UI; folders may still be scanned for load.
-        yield return "regent";
-    }
+    public static IEnumerable<string> KnownCharacterIds() =>
+        CharacterCatalog.List().Select(e => e.Slug);
 }
 
 public static class TextureCache

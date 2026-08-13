@@ -28,6 +28,9 @@
     "restDisplayOffset": [-173.983, 150.047],
     "restSpriteScale": 0.792,
     "restSeatAnchor": [0.5, 0.6],
-    "restVisibleBounds": [153, 125, 767, 1077]
+    "restVisibleBounds": [153, 125, 767, 1077],
+    "charSelectBgZoom": 1.2,
+    "charSelectBgOffsetX": -0.1,
+    "charSelectBgOffsetY": 0
   }
 }

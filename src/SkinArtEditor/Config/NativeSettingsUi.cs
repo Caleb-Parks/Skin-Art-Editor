@@ -15,6 +15,7 @@ public partial class NativeSettingsUi : CanvasLayer
     private LineEdit _knockoutThreshold = null!;
     private readonly Dictionary<string, LineEdit> _assetFields = new();
     private readonly Dictionary<string, LineEdit> _offsetFields = new();
+    private readonly List<CharacterCatalog.Entry> _catalog = [];
     private Label _status = null!;
     private Control _panel = null!;
     private string _characterId = "regent";
@@ -90,10 +91,12 @@ public partial class NativeSettingsUi : CanvasLayer
         var charRow = new HBoxContainer();
         charRow.AddChild(new Label { Text = "Character" });
         _character = new OptionButton();
-        _character.AddItem("Regent");
-        _character.ItemSelected += _ =>
+        RefreshCharacterDropdown();
+        _character.ItemSelected += idx =>
         {
-            _characterId = "regent";
+            if (idx < 0 || idx >= _catalog.Count)
+                return;
+            _characterId = _catalog[(int)idx].Slug;
             LoadIntoUi();
         };
         charRow.AddChild(_character);
@@ -146,7 +149,7 @@ public partial class NativeSettingsUi : CanvasLayer
                 {
                     _offsetFields["char_select_bg_zoom"].Text =
                         CharSelectBgFramer.DefaultZoom.ToString(CultureInfo.InvariantCulture);
-                    _offsetFields["char_select_bg_offset"].Text = Format(
+                    _offsetFields["char_select_bg_offset"].Text = SkinConfigService.FormatVec(
                     [
                         CharSelectBgFramer.DefaultOffsetX,
                         CharSelectBgFramer.DefaultOffsetY
@@ -188,6 +191,15 @@ public partial class NativeSettingsUi : CanvasLayer
         root.AddChild(_status);
     }
 
+    private void RefreshCharacterDropdown()
+    {
+        _catalog.Clear();
+        _catalog.AddRange(CharacterCatalog.List());
+        _character.Clear();
+        foreach (var entry in _catalog)
+            _character.AddItem(entry.DisplayName);
+    }
+
     private void AddOffsetField(VBoxContainer parent, string key, string label)
     {
         var row = new HBoxContainer();
@@ -200,6 +212,15 @@ public partial class NativeSettingsUi : CanvasLayer
 
     private void LoadIntoUi()
     {
+        RefreshCharacterDropdown();
+        var idx = _catalog.FindIndex(e => e.Slug.Equals(_characterId, StringComparison.OrdinalIgnoreCase));
+        if (idx < 0)
+        {
+            idx = 0;
+            _characterId = _catalog[0].Slug;
+        }
+        _character.Select(idx);
+
         var dto = SkinProfileLoader.LoadDtoOrDefault(_characterId);
         _enabled.ButtonPressed = dto.Enabled;
         _knockout.ButtonPressed = dto.KnockoutBackdrop;
@@ -210,19 +231,12 @@ public partial class NativeSettingsUi : CanvasLayer
             _assetFields[key].Text = val ?? "";
         }
 
-        var o = dto.Offsets;
-        _offsetFields["combat_pos"].Text = Format(o.CombatVisualsPosition);
-        _offsetFields["combat_scale"].Text = o.CombatVisualsScale.ToString(CultureInfo.InvariantCulture);
-        _offsetFields["combat_pad"].Text = o.CombatBottomPaddingPx.ToString(CultureInfo.InvariantCulture);
-        _offsetFields["form_vfx"].Text = Format(o.FormVfxPosition);
-        _offsetFields["shop_offset"].Text = Format(o.ShopSpriteOffset);
-        _offsetFields["shop_scale"].Text = o.ShopSpriteScale.ToString(CultureInfo.InvariantCulture);
-        _offsetFields["rest_offset"].Text = Format(o.RestDisplayOffset);
-        _offsetFields["rest_scale"].Text = o.RestSpriteScale.ToString(CultureInfo.InvariantCulture);
-        _offsetFields["rest_anchor"].Text = Format(o.RestSeatAnchor);
-        _offsetFields["rest_bounds"].Text = Format(o.RestVisibleBounds);
-        _offsetFields["char_select_bg_zoom"].Text = o.CharSelectBgZoom.ToString(CultureInfo.InvariantCulture);
-        _offsetFields["char_select_bg_offset"].Text = Format([o.CharSelectBgOffsetX, o.CharSelectBgOffsetY]);
+        foreach (var (key, value) in SkinConfigService.ReadOffsetFields(dto.Offsets))
+        {
+            if (_offsetFields.TryGetValue(key, out var field))
+                field.Text = value;
+        }
+
         _status.Text = $"Editing {_characterId} — restart after save to apply.";
     }
 
@@ -233,49 +247,32 @@ public partial class NativeSettingsUi : CanvasLayer
             var dto = SkinProfileLoader.LoadDtoOrDefault(_characterId);
             dto.Enabled = _enabled.ButtonPressed;
             dto.KnockoutBackdrop = _knockout.ButtonPressed;
-            if (int.TryParse(_knockoutThreshold.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var thr) && thr >= 0)
-                dto.KnockoutThreshold = thr;
-            else
-                dto.KnockoutThreshold = BackdropKnockout.DefaultThreshold;
+            dto.KnockoutThreshold = SkinConfigService.ParseThreshold(
+                _knockoutThreshold.Text, BackdropKnockout.DefaultThreshold);
 
+            var previousAssets = new Dictionary<string, string?>(dto.Assets, StringComparer.OrdinalIgnoreCase);
             dto.Assets.Clear();
 
             foreach (var key in AssetKeys.UserSelectable)
             {
                 var text = _assetFields[key].Text.Trim();
                 if (string.IsNullOrEmpty(text))
-                    continue;
-
-                if (Path.IsPathRooted(text) && File.Exists(text))
                 {
-                    dto.Assets[key] = AssetCopier.CopyAsset(
-                        _characterId, key, text, dto.KnockoutBackdrop, dto.KnockoutThreshold, dto);
+                    if (previousAssets.TryGetValue(key, out var old) && !string.IsNullOrWhiteSpace(old))
+                    {
+                        dto.Assets[key] = old;
+                        AssetCopier.ClearAsset(_characterId, key, dto);
+                    }
+                    continue;
                 }
-                else
-                    dto.Assets[key] = text;
+
+                SkinConfigService.SetUserAsset(_characterId, dto, key, text);
             }
 
-            var o = dto.Offsets;
-            o.CombatVisualsPosition = ParseVec(_offsetFields["combat_pos"].Text, o.CombatVisualsPosition);
-            o.CombatVisualsScale = ParseFloat(_offsetFields["combat_scale"].Text, o.CombatVisualsScale);
-            o.CombatBottomPaddingPx = ParseFloat(_offsetFields["combat_pad"].Text, o.CombatBottomPaddingPx);
-            o.FormVfxPosition = ParseVec(_offsetFields["form_vfx"].Text, o.FormVfxPosition);
-            o.ShopSpriteOffset = ParseVec(_offsetFields["shop_offset"].Text, o.ShopSpriteOffset);
-            o.ShopSpriteScale = ParseFloat(_offsetFields["shop_scale"].Text, o.ShopSpriteScale);
-            o.RestDisplayOffset = ParseVec(_offsetFields["rest_offset"].Text, o.RestDisplayOffset);
-            o.RestSpriteScale = ParseFloat(_offsetFields["rest_scale"].Text, o.RestSpriteScale);
-            o.RestSeatAnchor = ParseVec(_offsetFields["rest_anchor"].Text, o.RestSeatAnchor);
-            o.RestVisibleBounds = ParseBounds(_offsetFields["rest_bounds"].Text, o.RestVisibleBounds);
-            o.CharSelectBgZoom = ParseFloat(_offsetFields["char_select_bg_zoom"].Text, o.CharSelectBgZoom);
-            var bgOffset = ParseVec(
-                _offsetFields["char_select_bg_offset"].Text,
-                [o.CharSelectBgOffsetX, o.CharSelectBgOffsetY]);
-            o.CharSelectBgOffsetX = bgOffset[0];
-            o.CharSelectBgOffsetY = bgOffset[1];
+            var offsetFields = _offsetFields.ToDictionary(kv => kv.Key, kv => kv.Value.Text);
+            SkinConfigService.ApplyOffsetFields(dto.Offsets, offsetFields);
 
-            DerivedUiArt.EnsureAll(_characterId, dto);
-            SkinProfileLoader.Save(dto);
-            SkinRegistry.ReloadAll();
+            SkinConfigService.SaveAndReload(dto);
             _status.Text = "Saved. Restart the game to apply scene/texture overrides.";
             Log.Info(_status.Text);
         }
@@ -285,30 +282,4 @@ public partial class NativeSettingsUi : CanvasLayer
             Log.Warn(_status.Text);
         }
     }
-
-    private static string Format(float[] v) =>
-        string.Join(", ", v.Select(f => f.ToString(CultureInfo.InvariantCulture)));
-
-    private static float[] ParseVec(string s, float[] fallback)
-    {
-        var parts = s.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 2) return fallback;
-        if (!float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var x)) return fallback;
-        if (!float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var y)) return fallback;
-        return [x, y];
-    }
-
-    private static float[] ParseBounds(string s, float[] fallback)
-    {
-        var parts = s.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 4) return fallback;
-        var arr = new float[4];
-        for (var i = 0; i < 4; i++)
-            if (!float.TryParse(parts[i], NumberStyles.Float, CultureInfo.InvariantCulture, out arr[i]))
-                return fallback;
-        return arr;
-    }
-
-    private static float ParseFloat(string s, float fallback) =>
-        float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : fallback;
 }
