@@ -110,7 +110,7 @@ func _normalize_trigger(trigger: String) -> String:
 			return "Idle"
 		"Attack", "Attack_Sovereign", "attack_sovereign":
 			return "Attack"
-		"Cast", "PowerUp":
+		"Cast", "PowerUp", "summonTrigger":
 			return "Cast"
 		"Hit":
 			return "Hit"

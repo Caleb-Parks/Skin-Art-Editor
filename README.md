@@ -82,7 +82,7 @@ PNG merchant/rest/combat templates are shared across characters. Per-profile off
 
 - Rest-site hitbox / selection reticle / thought-bubble positions and root transform in `png_rest_site.tscn`
 - Combat intent/marker layout baked into `png_combat.tscn`
-- Animator trigger aliases (e.g. Regent `Attack_Sovereign` → attack) in `png_animator.gd`
+- Animator trigger aliases in `png_animator.gd` (e.g. Regent `Attack_Sovereign` → attack; Necrobinder `summonTrigger` → cast)
 - Card-library pools are mapped for the five vanilla characters in code
 
 ## Build / deploy
