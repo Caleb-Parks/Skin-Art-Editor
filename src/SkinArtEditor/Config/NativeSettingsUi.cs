@@ -97,7 +97,8 @@ public partial class NativeSettingsUi : CanvasLayer
             if (idx < 0 || idx >= _catalog.Count)
                 return;
             _characterId = _catalog[(int)idx].Slug;
-            LoadIntoUi();
+            // Avoid LoadIntoUi → Refresh/Select re-entrancy snapping to Defect (index 0).
+            LoadProfileFieldsOnly();
         };
         charRow.AddChild(_character);
         root.AddChild(charRow);
@@ -193,11 +194,13 @@ public partial class NativeSettingsUi : CanvasLayer
 
     private void RefreshCharacterDropdown()
     {
+        _character.SetBlockSignals(true);
         _catalog.Clear();
         _catalog.AddRange(CharacterCatalog.List());
         _character.Clear();
         foreach (var entry in _catalog)
             _character.AddItem(entry.DisplayName);
+        _character.SetBlockSignals(false);
     }
 
     private void AddOffsetField(VBoxContainer parent, string key, string label)
@@ -219,8 +222,16 @@ public partial class NativeSettingsUi : CanvasLayer
             idx = 0;
             _characterId = _catalog[0].Slug;
         }
+        // Block signals so Select does not re-enter ItemSelected and overwrite _characterId.
+        _character.SetBlockSignals(true);
         _character.Select(idx);
+        _character.SetBlockSignals(false);
 
+        LoadProfileFieldsOnly();
+    }
+
+    private void LoadProfileFieldsOnly()
+    {
         var dto = SkinProfileLoader.LoadDtoOrDefault(_characterId);
         _enabled.ButtonPressed = dto.Enabled;
         _knockout.ButtonPressed = dto.KnockoutBackdrop;

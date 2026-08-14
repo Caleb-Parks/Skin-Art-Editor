@@ -39,6 +39,8 @@ public static class ModConfigIntegration
                 array.SetValue(entries[i], i);
 
             register.Invoke(null, [ModId, "Skin Art Editor", array]);
+            // Dropdown may already show a persisted character without OnChanged — sync now.
+            ResolveSelectedCharacterId();
             Log.Info("Registered settings with ModConfig");
             return true;
         }
@@ -128,6 +130,21 @@ public static class ModConfigIntegration
         Log.Info($"ModConfig character → {SkinConfigService.SelectedCharacterId}");
     }
 
+    /// <summary>
+    /// ModConfig may restore the Character dropdown from disk without firing OnChanged.
+    /// Always re-read the live dropdown value before browse/clear/save.
+    /// </summary>
+    private static string ResolveSelectedCharacterId()
+    {
+        var raw = GetModConfigValue<object?>("character", null);
+        var display = raw?.ToString();
+        if (string.IsNullOrWhiteSpace(display))
+            display = CharacterCatalog.DisplayNameFor(SkinConfigService.SelectedCharacterId);
+        var resolved = CharacterCatalog.SlugFromDisplay(display);
+        SkinConfigService.SelectedCharacterId = resolved;
+        return resolved;
+    }
+
     private static void PushDtoToModConfig(SkinProfileDto dto)
     {
         SetModConfigValue("enabled", dto.Enabled);
@@ -186,11 +203,13 @@ public static class ModConfigIntegration
             return;
         }
 
-        var characterId = SkinConfigService.SelectedCharacterId;
+        var characterId = ResolveSelectedCharacterId();
         FileBrowseHelper.BrowsePng(_host, $"Select {key}.png", path =>
         {
             try
             {
+                // Re-resolve in case the dropdown changed while the file dialog was open.
+                characterId = ResolveSelectedCharacterId();
                 var dto = SkinProfileLoader.LoadDtoOrDefault(characterId);
                 dto.KnockoutBackdrop = GetModConfigValue("knockout", dto.KnockoutBackdrop);
                 dto.KnockoutThreshold = SkinConfigService.ParseThreshold(
@@ -220,7 +239,7 @@ public static class ModConfigIntegration
 
     private static void ClearKey(string key)
     {
-        var characterId = SkinConfigService.SelectedCharacterId;
+        var characterId = ResolveSelectedCharacterId();
         var dto = SkinProfileLoader.LoadDtoOrDefault(characterId);
         AssetCopier.ClearAsset(characterId, key, dto);
         SkinConfigService.SaveAndReload(dto);
@@ -230,9 +249,7 @@ public static class ModConfigIntegration
 
     private static void SaveFromModConfig()
     {
-        var display = GetModConfigValue("character", CharacterCatalog.DisplayNameFor(SkinConfigService.SelectedCharacterId));
-        SkinConfigService.SelectedCharacterId = CharacterCatalog.SlugFromDisplay(display);
-        var characterId = SkinConfigService.SelectedCharacterId;
+        var characterId = ResolveSelectedCharacterId();
 
         var dto = SkinProfileLoader.LoadDtoOrDefault(characterId);
         dto.Enabled = GetModConfigValue("enabled", dto.Enabled);
